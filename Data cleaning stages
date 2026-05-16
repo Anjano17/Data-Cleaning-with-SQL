@@ -1,0 +1,180 @@
+---In Stage 1 ,
+---we will clean the data by removing any leading 
+---or trailing spaces from the company and location columns, 
+---and converting the total_laid_off 
+---and percentage_laid_off columns to their appropriate data types.
+--Checking duplicate records
+
+Select *, 
+	Row_number ()
+		over (partition by company,location,industry,total_laid_off 
+			Order by company,location,industry,total_laid_off) as Rn_num
+from layoffs_stage1;
+
+With duplicates as (
+	Select *, 
+	Row_number ()
+		over (partition by company,location,industry,total_laid_off 
+			Order by company,location,industry,total_laid_off) as Rn_num
+	from layoffs_stage1
+	)
+Select * 
+from duplicates
+where Rn_num >1;
+
+With duplicates as (
+	Select *, 
+	Row_number ()
+		over (partition by company,location,industry,total_laid_off 
+			Order by company,location,industry,total_laid_off) as Rn_num
+	from layoffs_stage1
+	)
+Delete
+from duplicates
+where Rn_num >1;
+Select * from layoffs_stage1;  --2291 rows after removing duplicates...
+
+
+-----------------------------------------------------------------------------------------
+---In Next process, we will make standardization of the data by checking for any inconsistencies 
+---in the industry and stage columns, and standardizing the values to a consistent format. 
+---We will also convert the date column to a date data type.
+
+Select company 
+from layoffs_stage1
+
+Select company,Trim (company)
+from layoffs_stage1
+where company like 'E In%'
+
+--Update the company column by removing leading and trailing spaces
+
+Update layoffs_stage1
+SET company = Trim(company);
+
+Select Distinct industry
+From layoffs_stage1;
+
+Select industry
+from layoffs_stage1
+where industry like'Crypto%'
+
+Update layoffs_stage1
+SET industry = 'Crypto'
+Where industry like 'Crypto%';
+
+Select *
+from layoffs_stage1
+where industry is null;
+
+Select *
+from layoffs_stage1
+where company = 'Airbnb';
+
+Update layoffs_stage1
+SET industry = 'Travel'
+Where company = 'Airbnb';
+
+Select *
+from layoffs_stage1
+where company = 'Carvana';
+
+Update layoffs_stage1
+SET industry = 'Transportation'
+Where company = 'Carvana';
+
+Select *
+from layoffs_stage1
+where company = 'Juul';
+
+Update layoffs_stage1
+SET industry = 'Consumer'
+where company = 'Juul';
+--------------------------------------------------------------------------------------
+---total_laid_off column 
+--has some non-numeric values, 
+--we will convert those to NULL 
+--taking the avg value to fill the null values.
+
+Select distinct total_laid_off 
+from Layoffs_stage1;
+
+Alter table layoffs_stage1
+Alter column total_laid_off bigint;
+
+Select AVG(cast(total_laid_off As float)) as mean_laid_off
+from layoffs_stage1
+
+Select * from layoffs_stage1
+where total_laid_off is null;
+
+-- Check out the location values:
+
+Select Distinct location
+from layoffs_stage1;
+
+Select Trim(location)
+from layoffs_stage1
+
+
+Update layoffs_stage1
+SET location = 'Malmo'
+where location like 'Malm%'
+
+Update layoffs_stage1
+SET location = Trim (location);
+
+Update layoffs_stage1
+SET industry = Trim (industry);
+--Check out the stage and country column
+Select * from layoffs_stage1
+
+Select distinct country
+from layoffs_stage1;
+
+Select *
+from layoffs_stage1
+where country = 'United States'
+
+Update layoffs_stage1
+SET country = 'United States'
+where country = 'United States.';
+
+---------------------------------------------------------------------------------------------
+---Then change the data type to bigint 
+--- convert the data type to text - varchar - date 
+--( using try_convert(datatype, column_name, style(101 - mm/dd/yyyy format) )
+---to convert the date column to a date data type.
+
+Alter table layoffs_stage1
+Alter column date varchar(max);
+
+
+Select date , Try_convert(DATE, date ,101) as layoff_date
+from layoffs_stage1;
+
+Alter table layoffs_stage1
+Add layoff_date Date;
+
+Update layoffs_stage1
+SET layoff_date = TRY_CONVERT(Date,date,101);
+
+
+Alter table layoffs_stage1
+Drop column date;
+
+Select distinct funds_raised_millions
+from layoffs_stage1;
+
+---------------------------------------------------------------------------------
+--- Remove the null values in total_laid_off and percentage_laid_off.
+Delete
+from  layoffs_stage1
+where total_laid_off is null 
+and percentage_laid_off is null;
+
+Select *
+into Layoff_final
+from layoffs_stage1;
+
+Select * from Layoff_final;
