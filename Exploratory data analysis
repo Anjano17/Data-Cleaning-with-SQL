@@ -1,0 +1,128 @@
+---- Exploratory data analysis ;
+
+
+Select * from Layoff_final;
+
+Select company, SUM(total_laid_off) as total_laid_off
+from Layoff_final
+group by company, total_laid_off
+order by total_laid_off desc;
+
+Select company, SUM(total_laid_off) as total_laid_off
+from Layoff_final
+group by company, total_laid_off
+having company = 'Loft'
+
+EXEC sp_help 'Layoff_final';
+
+With CTE as (
+	Select company, total_laid_off,
+	rank() over (partition by company order by total_laid_off desc) as row_num
+	from Layoff_final
+	)
+	Select * from CTE
+where row_num >3;
+
+--- Here column data type is varchar, so we can change to the decimal data type for better analysis.
+
+Alter table Layoff_final
+Alter column total_laid_off decimal(10,2);
+
+Alter table Layoff_final
+Alter column funds_raised_millions decimal(10,2);
+
+Alter table Layoff_final
+Alter column percentage_laid_off decimal(10,0);
+
+--- Final we see the total laid off by each company and large number of layoffs.
+
+Select company, Sum(total_laid_off) as Total_laidoff
+from Layoff_final
+group by company
+order by Total_laidoff desc;
+Select * from Layoff_final
+
+--- Check the total laid off by each country and large number of layoffs.
+
+Select country, Sum(total_laid_off) as Total_laidoff
+from Layoff_final
+group by country
+order by Total_laidoff desc;
+
+--- Check the total laid off by each industry and large number of layoffs.
+
+Select industry, Sum(total_laid_off) as Total_laidoff
+from Layoff_final
+group by industry
+order by Total_laidoff desc;
+
+--- Check the total laid off by each stage and large number of layoffs.
+
+Select stage, Sum(total_laid_off) as Total_laidoff
+from Layoff_final
+group by stage
+order by Total_laidoff desc;
+
+--- Time series analysis of layoffs over time.
+
+--The year with the highest layoffs and the trend of layoffs over time.
+
+Select Year(layoff_date) as Year_, sum(total_laid_off) as Total
+from Layoff_final
+Group by Year(layoff_date)
+order by Year(layoff_date) Desc;
+
+--- The month with the highest layoffs and the trend of layoffs over time.
+
+Select Year(layoff_date) as year_ , Month(layoff_date) as Month_, Sum(total_laid_off) as Total
+from Layoff_final
+group by Year(layoff_date),Month(layoff_date)
+order by Year(layoff_date),Month(layoff_date) ;
+
+
+--- Calculate the running total of total layoffs over time.
+
+	Select Year(layoff_date) as Year_ , 
+			Month(layoff_date) as Month_, 
+			Sum(total_laid_off) as Total
+		from Layoff_final
+			where layoff_date is not null
+			group by Year(layoff_date),Month(layoff_date)
+			order by Year(layoff_date),Month(layoff_date)
+
+With CTE as (
+	Select ROW_NUMBER() over (order by Year(layoff_date),Month(layoff_date)) as Row_num,
+		Year(layoff_date) as Year_ , 
+			Month(layoff_date) as Month_, 
+			Sum(total_laid_off) as Total
+		from Layoff_final
+			where layoff_date is not null
+			group by Year(layoff_date),Month(layoff_date)
+			)
+		SElect *,
+			SUM(Total) over (order by Row_num) as Running_total
+			from CTE;
+
+--- Calculate the company and year with the highest layoffs.
+
+Select company, YEAR(layoff_date) as Year_, SUM(total_laid_off) as Total_laidoffs
+from Layoff_final
+Group by company, YEAR(layoff_date)
+Order by 3 Desc;
+
+With Company_year (Company, Year_, Total_Laidoff) as 
+(
+	Select company, YEAR(layoff_date), SUM(total_laid_off)
+	from Layoff_final
+	where layoff_date is not null
+	Group by company, YEAR(layoff_date)
+	),
+
+Company_year_rank as (
+	Select *, 
+	DENSE_RANK() over (partition by Year_ order by Total_Laidoff Desc) as Highest_laidoff_company
+	from Company_year
+	)
+	Select *
+	from Company_year_rank
+	where Highest_laidoff_company <= 3;
