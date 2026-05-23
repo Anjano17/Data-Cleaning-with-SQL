@@ -1,4 +1,4 @@
-# Data-Cleaning-with-SQL
+# Data-Cleaning-EDA-with-SQL
 It's Layoff details of all around world. This are the messy data have duplicate values. It's contain the null values.
 
 Cleaning data process - 
